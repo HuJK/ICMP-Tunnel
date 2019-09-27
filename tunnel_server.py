@@ -177,7 +177,8 @@ class TunnelServer():
                         self.icmptun.send(val["addr"],data,val["id"],val["seq"])
                         val["seq"] += 1
                     curTime = time.time()
-                    for key in self.clients.keys():
+                    keys = list(self.clients.keys())
+                    for key in keys:
                         if curTime - self.clients[key]["aliveTime"] > self.TIMEOUT:
                             print("Remove timeout client", self.clients[key]["addr"])
                             del self.clients[key]
