@@ -46,19 +46,21 @@ class ICMPtunnel():
         self.LanIP= b"169.254.1.1"
         self.login(self.pwd)
     def login(self,pwd):
+        print("Send Login Request")
         self.send(b"Login Request")
         data = self.recv()
-        print(data)
         if not data.startswith(b"Login Challange:"):
             raise BaseException("Invalid Response")
         loginChallange = data.split(b":")[1]
-        print(b"Challange received:" + loginChallange)
+        print("Challange received:" , loginChallange)
         ans = base64.b64encode(hashlib.sha256(loginChallange + self.pwd).digest())
-        print(b"Send login answer :" + ans)
+        print("Send login answer :" , ans)
         self.send(b"loginAnswer:" + ans)
         data = self.recv()
-        print(data)
-        self.LanIP = data.split(b":")[1]
+        print(data.decode("utf8"))
+        self.LanIP = data.split(b":")[1].split(b"/")[0]
+        self.masklen = int(   data.split(b"/")[1] )
+
     def send(self,data,addr = None):
         #print("S",self.seq)
         addr = addr if addr is not None else self.addr
@@ -98,7 +100,7 @@ class Tunnel():
         self.tfd = os.open("/dev/net/tun", os.O_RDWR)
         ifs = fcntl.ioctl( self.tfd, TUNSETIFF, struct.pack("16sH", b"t%d", IFF_TUN))
         self.tname = ifs[:16].strip(b"\x00").decode("utf8")
-        print(self.tname)
+        print("tun device allocated:",self.tname)
 
     def config(self, ip):
         os.system("ip link set %s up" % (self.tname))
@@ -125,9 +127,14 @@ class Tunnel():
     def close(self):
         os.close(self.tfd)
 
+
 try:
-    tun = Tunnel("jp.vm.sivilization.com",b"password",b"AES-CTR_password",998)
+    if len(sys.argv) < 5:
+        print("Usage: " + sys.argv[0] + " address password AES_CTR_password MTU")
+        print("Example: " + sys.argv[0] + " example.com password AES-CTR_password 1000")
+        exit()
+    tun = Tunnel(sys.argv[1],sys.argv[2].encode("utf8") ,sys.argv[3].encode("utf8"),int(sys.argv[4]))
     tun.run()
 except KeyboardInterrupt:
     tun.close()
-    sys.exit(0) 
+    sys.exit(0)
