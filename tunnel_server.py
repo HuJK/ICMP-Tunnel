@@ -162,8 +162,8 @@ class TunnelServer():
             testIP = (IFACE_Maski & IFACE_IPi) | ((2**32-1 ^ IFACE_Maski) & testIP)
             if testIP not in inUseIP:
                 return self.ip_int2str(testIP)
-        print("No ip available, all ip in ip pool are in use")
-        return "0.0.0.0"
+        print("No ip available, all ip in ip pool are already in use")
+        return "169.254.1.1"
 
     def run(self):
         self.icmpfd = self.icmptun.sock
@@ -212,7 +212,7 @@ class TunnelServer():
                         if self.clients[key]["LanIP"] == "169.254.1.1":
                             if data.startswith(b"loginAnswer:" + self.clients[key]["loginAnswer"]):
                                 self.clients[key]["LanIP"] = self.getNextAvailableIp()
-                                data = "Login Success. Your IP is :" + self.clients[key]["LanIP"]
+                                data = "Login Success. Allocatd IP is :" + self.clients[key]["LanIP"] + "/" + str(self.masklen)
                                 print(data)
                                 self.icmptun.send(pack.src,data.encode("utf8"),pack.id,pack.seq)
                             else:
@@ -223,7 +223,11 @@ class TunnelServer():
                             os.write(self.tfd, data)
                             self.clients[key]["aliveTime"] = time.time()
 try:
-    tun = TunnelServer("192.168.99.1",24,b"password",b"AES-CTR_password",998)
+    if len(sys.argv) < 5:
+        print("Usage: " + sys.argv[0] + " server_address/mask_length password AES_CTR_password MTU")
+        print("Example: " + sys.argv[0] + " 10.99.8.1/24 password AES-CTR_password 1000")
+        exit()
+    tun = TunnelServer(sys.argv[1].split("/")[0],int(sys.argv[1].split("/")[1]),sys.argv[2].encode("utf8") ,sys.argv[3].encode("utf8"),int(sys.argv[4]))
     tun.run()
 except KeyboardInterrupt:
     tun.close()
