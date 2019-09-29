@@ -174,8 +174,9 @@ class TunnelServer():
                 if r == self.tfd:
                     data = os.read(self.tfd, self.mtu + 500 )
                     for key,val in self.clients.items():
-                        self.icmptun.send(val["addr"],data,val["id"],val["seq"])
-                        val["seq"] += 1
+                        if socket.inet_ntoa(data[20:24]) == val["LanIP"] or socket.inet_ntoa(data[20:24]) == "0.0.0.0":
+                            self.icmptun.send(val["addr"],data,val["id"],val["seq"])
+                            val["seq"] += 1
                     curTime = time.time()
                     keys = list(self.clients.keys())
                     for key in keys:
