@@ -120,7 +120,6 @@ class TunnelServer():
         self.pwd = hashlib.md5(pwd).digest()
         self.icmpfd = self.icmptun.sock
         self.masklen = masklen
-        self.mask = "255.255.255.0"
         self.ServerIP = addr
         self.clients={}
         self.mtu = mtu
@@ -174,7 +173,7 @@ class TunnelServer():
                 if r == self.tfd:
                     data = os.read(self.tfd, self.mtu + 500 )
                     for key,val in self.clients.items():
-                        if socket.inet_ntoa(data[20:24]) == val["LanIP"] or socket.inet_ntoa(data[20:24]) == "0.0.0.0":
+                        if socket.inet_ntoa(data[20:24]) == val["LanIP"] or socket.inet_ntoa(data[20:24]) == self.ip_int2str(self.ip_str2int(self.ServerIP) | (2**(32 - self.masklen) - 1)) :
                             self.icmptun.send(val["addr"],data,val["id"],val["seq"])
                             val["seq"] += 1
                     curTime = time.time()
